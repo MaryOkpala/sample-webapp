@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+
+    environment {
+        NEXUS_URL = "http://192.168.56.11:8081"
+        NEXUS_REPO = "maven-snapshots"
+        TOMCAT_HOST = "192.168.56.12"
+        ARTIFACT_PATH = "com/devops/project/sample-webapp/1.0-SNAPSHOT"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/MaryOkpala/sample-webapp.git'
+            }
+        }
+
+        stage('Build & Deploy to Nexus') {
+            steps {
+                sh 'mvn clean deploy'
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                sh """
+                ssh vagrant@${TOMCAT_HOST} '
+                wget --user=admin --password="08065339194eD#*" \
+                ${NEXUS_URL}/repository/${NEXUS_REPO}/${ARTIFACT_PATH}/sample-webapp-1.0-*.war \
+                -O /opt/tomcat/webapps/sample-webapp.war
+                '
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
+}
+
