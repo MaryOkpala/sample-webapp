@@ -44,9 +44,16 @@ pipeline {
             steps {
                 sshagent(['tomcat-ssh']) {
                     sh """
+                    # Copy WAR to temporary location
                     scp -o StrictHostKeyChecking=no \
                     target/sample-webapp.war \
-                    vagrant@${TOMCAT_HOST}:${TOMCAT_PATH}/sample-webapp.war
+                    vagrant@${TOMCAT_HOST}:/tmp/sample-webapp.war
+
+                    # Move WAR into Tomcat directory and restart
+                    ssh -o StrictHostKeyChecking=no vagrant@${TOMCAT_HOST} '
+                        sudo mv /tmp/sample-webapp.war ${TOMCAT_PATH}/sample-webapp.war &&
+                        sudo systemctl restart tomcat
+                    '
                     """
                 }
             }
